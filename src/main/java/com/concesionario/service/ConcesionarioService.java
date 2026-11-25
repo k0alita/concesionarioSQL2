@@ -4,6 +4,7 @@ import com.concesionario.ConexionBD;
 import com.concesionario.model.Coche;
 import com.concesionario.model.Propietario;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,6 +19,11 @@ public class ConcesionarioService {
 
     private final ConexionBD conexionBD;
 
+    /**
+     * Crea el servicio asociado al gestor de conexiones.
+     *
+     * @param conexionBD gestor de conexiones a la base de datos
+     */
     public ConcesionarioService(ConexionBD conexionBD) {
         this.conexionBD = conexionBD;
     }
@@ -93,6 +99,8 @@ public class ConcesionarioService {
 
     /**
      * Inserta un nuevo propietario en la base de datos.
+     *
+     * @param propietario datos del propietario a registrar
      */
     public void registrarPropietario(Propietario propietario) {
         String sql = "INSERT INTO propietarios (dni, nombre, apellidos, telefono) VALUES (?, ?, ?, ?)";
@@ -116,6 +124,8 @@ public class ConcesionarioService {
 
     /**
      * Inserta un nuevo coche perteneciente al concesionario (sin propietario).
+     *
+     * @param coche datos del vehículo a insertar
      */
     public void insertarCoche(Coche coche) {
         String sql = "INSERT INTO coches (matricula, marca, modelo, extras, precio, id_propietario) VALUES (?, ?, ?, ?, ?, NULL)";
@@ -204,6 +214,8 @@ public class ConcesionarioService {
 
     /**
      * Modifica los datos de un coche existente a partir de su matrícula.
+     *
+     * @param coche objeto con la matrícula a buscar y los nuevos datos
      */
     public void modificarCoche(Coche coche) {
         String sql = "UPDATE coches SET marca = ?, modelo = ?, extras = ?, precio = ? WHERE matricula = ?";
@@ -228,6 +240,8 @@ public class ConcesionarioService {
 
     /**
      * Elimina un coche de la base de datos a partir de su matrícula.
+     *
+     * @param matricula matrícula del vehículo a eliminar
      */
     public void borrarCoche(String matricula) {
         String sql = "DELETE FROM coches WHERE matricula = ?";
@@ -242,6 +256,118 @@ public class ConcesionarioService {
             }
         } catch (SQLException e) {
             System.out.println("Error al borrar coche (puede tener traspasos asociados): " + e.getMessage());
+        }
+    }
+
+    /**
+     * Realiza el traspaso de un coche a un comprador de forma transaccional.
+     *
+     * @param dniComprador DNI del comprador
+     * @param matricula matrícula del coche a traspasar
+     * @param monto importe económico del traspaso
+     */
+    public void realizarTraspaso(String dniComprador, String matricula, double monto) {
+        try (Connection conexion = conexionBD.getConnection()) {
+            // 1. Verificar que el comprador existe
+            Integer idComprador = null;
+            try (PreparedStatement ps = conexion.prepareStatement("SELECT id_propietario FROM propietarios WHERE dni = ?")) {
+                ps.setString(1, dniComprador);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idComprador = rs.getInt("id_propietario");
+                    }
+                }
+            }
+            if (idComprador == null) {
+                System.out.println("Error: No existe ningún propietario con DNI " + dniComprador);
+                return;
+            }
+
+            // 2. Verificar que el coche existe y obtener su propietario actual (vendedor)
+            Integer idVendedor = null;
+            boolean cocheExiste = false;
+            try (PreparedStatement ps = conexion.prepareStatement("SELECT id_propietario FROM coches WHERE matricula = ?")) {
+                ps.setString(1, matricula);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        cocheExiste = true;
+                        Object val = rs.getObject("id_propietario");
+                        if (val != null) {
+                            idVendedor = ((Number) val).intValue();
+                        }
+                    }
+                }
+            }
+            if (!cocheExiste) {
+                System.out.println("Error: No existe ningún coche con matrícula " + matricula);
+                return;
+            }
+            if (idComprador.equals(idVendedor)) {
+                System.out.println("Error: Ese propietario ya es el dueño actual del coche.");
+                return;
+            }
+
+            // 3. Transacción: actualizar propietario del coche e insertar traspaso
+            conexion.setAutoCommit(false);
+            try (PreparedStatement psUpdate = conexion.prepareStatement("UPDATE coches SET id_propietario = ? WHERE matricula = ?");
+                 PreparedStatement psInsert = conexion.prepareStatement(
+                         "INSERT INTO traspasos (matricula_coche, id_vendedor, id_comprador, monto_economico) VALUES (?, ?, ?, ?)")) {
+
+                psUpdate.setInt(1, idComprador);
+                psUpdate.setString(2, matricula);
+                psUpdate.executeUpdate();
+
+                psInsert.setString(1, matricula);
+                psInsert.setObject(2, idVendedor);
+                psInsert.setInt(3, idComprador);
+                psInsert.setDouble(4, monto);
+                psInsert.executeUpdate();
+
+                conexion.commit();
+                System.out.println("Traspaso realizado correctamente.");
+            } catch (SQLException e) {
+                conexion.rollback();
+                System.out.println("Error en el traspaso (rollback realizado): " + e.getMessage());
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión al realizar traspaso: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Llama al procedimiento almacenado MYSQL.
+     *
+     * @param marca marca de vehículos a consultar
+     */
+    public void ejecutarProcedimientoMarca(String marca) {
+        if (!conexionBD.esMySQL()) {
+            System.out.println("Esta opción solo está disponible en MySQL.");
+            return;
+        }
+        try (Connection conexion = conexionBD.getConnection();
+             CallableStatement cs = conexion.prepareCall("{CALL sp_coches_por_marca(?)}")) {
+
+            cs.setString(1, marca);
+            try (ResultSet rs = cs.executeQuery()) {
+                boolean hayResultados = false;
+                System.out.println("\n--- Coches de la marca " + marca + " ---");
+                while (rs.next()) {
+                    hayResultados = true;
+                    Coche coche = new Coche(
+                            rs.getString("matricula"),
+                            rs.getString("marca"),
+                            rs.getString("modelo"),
+                            rs.getString("extras"),
+                            rs.getDouble("precio")
+                    );
+                    System.out.println(coche);
+                }
+                if (!hayResultados) {
+                    System.out.println("No hay coches registrados de esa marca.");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al ejecutar el procedimiento almacenado: " + e.getMessage());
         }
     }
 

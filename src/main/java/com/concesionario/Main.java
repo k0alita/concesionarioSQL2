@@ -9,6 +9,9 @@ import java.io.IOException;
  */
 public class Main {
 
+    /**
+     * Inicia la aplicación cargando la configuración y abriendo el menú de consola.
+     */
     public static void main(String[] args) {
         try {
             ConexionBD conexionBD = new ConexionBD();

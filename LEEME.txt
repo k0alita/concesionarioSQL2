@@ -1,0 +1,9 @@
+LEEME - Gestión de Concesionario (JDBC: MySQL y SQLite)
+
+1. Conectores JDBC
+- Ventajas: Mismo código Java para distintos motores (solo cambia la URL y el driver en config.properties), seguridad con PreparedStatement y control directo de transacciones (commit/rollback).
+- Inconvenientes: Hay que mapear a mano los ResultSet a objetos Java y adaptar pequeñas diferencias de SQL entre motores (como AUTO_INCREMENT vs AUTOINCREMENT).
+
+2. SQLite (embebida) vs MySQL (servidor)
+- SQLite: No necesita servidor y guarda todo en un solo archivo (data/concesionario.db), ideal para pruebas locales. Como inconveniente, no soporta procedimientos almacenados, hay que activar las claves foráneas en cada conexión (PRAGMA foreign_keys = ON) y no está pensada para varios usuarios a la vez.
+- MySQL: Soporta procedimientos almacenados, concurrencia y usuarios/permisos, y tiene claves foráneas activas por defecto. Como inconveniente, requiere instalar, configurar y tener arrancado el servidor.

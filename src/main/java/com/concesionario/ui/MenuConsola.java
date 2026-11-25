@@ -4,6 +4,8 @@ import com.concesionario.ConexionBD;
 import com.concesionario.model.Coche;
 import com.concesionario.model.Propietario;
 import com.concesionario.service.ConcesionarioService;
+import com.concesionario.service.GeneradorInforme;
+import com.concesionario.service.ImportadorCSV;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -16,11 +18,20 @@ public class MenuConsola {
 
     private final ConexionBD conexionBD;
     private final ConcesionarioService service;
+    private final ImportadorCSV importadorCSV;
+    private final GeneradorInforme generadorInforme;
     private final Scanner sc = new Scanner(System.in);
 
+    /**
+     * Crea el menú de consola asociado al gestor de conexiones.
+     *
+     * @param conexionBD gestor de conexiones a la base de datos
+     */
     public MenuConsola(ConexionBD conexionBD) {
         this.conexionBD = conexionBD;
         this.service = new ConcesionarioService(conexionBD);
+        this.importadorCSV = new ImportadorCSV(conexionBD);
+        this.generadorInforme = new GeneradorInforme(conexionBD);
     }
 
     /**
@@ -39,31 +50,17 @@ public class MenuConsola {
 
             switch (opcion) {
                 case 1 -> conectarBD();
-                case 2 -> {
-                    if (estaConectado()) service.inicializarTablas();
-                }
-                case 3 -> {
-                    if (estaConectado()) registrarPropietario();
-                }
-                case 4 -> {
-                    if (estaConectado()) insertarCoche();
-                }
-                case 5 -> System.out.println("Pendiente: Importar Coches (CSV)");
-                case 6 -> {
-                    if (estaConectado()) service.listarCochesConcesionario();
-                }
-                case 7 -> {
-                    if (estaConectado()) service.listarCochesPropietarios();
-                }
-                case 8 -> {
-                    if (estaConectado()) modificarCoche();
-                }
-                case 9 -> {
-                    if (estaConectado()) borrarCoche();
-                }
-                case 10 -> System.out.println("Pendiente: Realizar Traspaso");
-                case 11 -> System.out.println("Pendiente: Ejecutar Procedimiento Almacenado");
-                case 12 -> System.out.println("Pendiente: Generar Informe Resumen");
+                case 2 -> { if (estaConectado()) service.inicializarTablas(); }
+                case 3 -> { if (estaConectado()) registrarPropietario(); }
+                case 4 -> { if (estaConectado()) insertarCoche(); }
+                case 5 -> { if (estaConectado()) importadorCSV.importar(); }
+                case 6 -> { if (estaConectado()) service.listarCochesConcesionario(); }
+                case 7 -> { if (estaConectado()) service.listarCochesPropietarios(); }
+                case 8 -> { if (estaConectado()) modificarCoche(); }
+                case 9 -> { if (estaConectado()) borrarCoche(); }
+                case 10 -> { if (estaConectado()) realizarTraspaso(); }
+                case 11 -> { if (estaConectado()) ejecutarProcedimiento(); }
+                case 12 -> { if (estaConectado()) generadorInforme.generarInforme(); }
                 case 0 -> System.out.println("Saliendo...");
                 default -> System.out.println("Opción no válida.");
             }
@@ -154,12 +151,32 @@ public class MenuConsola {
         service.borrarCoche(matricula);
     }
 
+    private void realizarTraspaso() {
+        System.out.print("DNI del comprador: ");
+        String dni = sc.nextLine().trim();
+        System.out.print("Matrícula del coche: ");
+        String matricula = sc.nextLine().trim();
+        System.out.print("Monto económico: ");
+        try {
+            double monto = Double.parseDouble(sc.nextLine().trim().replace(',', '.'));
+            service.realizarTraspaso(dni, matricula, monto);
+        } catch (NumberFormatException e) {
+            System.out.println("Monto no válido.");
+        }
+    }
+
+    private void ejecutarProcedimiento() {
+        System.out.print("Marca a buscar: ");
+        String marca = sc.nextLine().trim();
+        service.ejecutarProcedimientoMarca(marca);
+    }
+
     private Coche pedirDatosCoche(String matricula) {
         System.out.print("Marca: ");
         String marca = sc.nextLine().trim();
         System.out.print("Modelo: ");
         String modelo = sc.nextLine().trim();
-        System.out.print("Extras (separados por coma): ");
+        System.out.print("Extras (separados por |): ");
         String extras = sc.nextLine().trim();
         System.out.print("Precio: ");
         try {

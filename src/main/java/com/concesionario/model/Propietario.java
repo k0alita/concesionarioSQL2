@@ -11,6 +11,14 @@ public class Propietario {
     private String apellidos;
     private String telefono;
 
+    /**
+     * Crea un propietario sin ID asignado (para altas nuevas).
+     *
+     * @param dni       DNI único del propietario
+     * @param nombre    nombre del propietario
+     * @param apellidos apellidos del propietario
+     * @param telefono  teléfono de contacto
+     */
     public Propietario(String dni, String nombre, String apellidos, String telefono) {
         this.dni = dni;
         this.nombre = nombre;
@@ -18,6 +26,15 @@ public class Propietario {
         this.telefono = telefono;
     }
 
+    /**
+     * Crea un propietario con todos sus datos incluido su identificador.
+     *
+     * @param idPropietario identificador único en base de datos
+     * @param dni           DNI único del propietario
+     * @param nombre        nombre del propietario
+     * @param apellidos     apellidos del propietario
+     * @param telefono      teléfono de contacto
+     */
     public Propietario(int idPropietario, String dni, String nombre, String apellidos, String telefono) {
         this(dni, nombre, apellidos, telefono);
         this.idPropietario = idPropietario;
@@ -65,7 +82,6 @@ public class Propietario {
 
     @Override
     public String toString() {
-        return String.format("[%d] %s - %s %s (Tel: %s)",
-                idPropietario, dni, nombre, apellidos, telefono);
+        return "[" + idPropietario + "] " + dni + " - " + nombre + " " + apellidos + " (Tel: " + telefono + ")";
     }
 }

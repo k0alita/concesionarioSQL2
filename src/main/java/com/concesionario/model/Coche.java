@@ -12,10 +12,29 @@ public class Coche {
     private double precio;
     private Integer idPropietario;
 
+    /**
+     * Crea un coche perteneciente al concesionario.
+     *
+     * @param matricula matrícula única del coche
+     * @param marca     marca del vehículo
+     * @param modelo    modelo del vehículo
+     * @param extras    equipamiento adicional
+     * @param precio    precio del coche
+     */
     public Coche(String matricula, String marca, String modelo, String extras, double precio) {
         this(matricula, marca, modelo, extras, precio, null);
     }
 
+    /**
+     * Crea un coche con todos sus datos incluido el propietario.
+     *
+     * @param matricula     matrícula única del coche
+     * @param marca         marca del vehículo
+     * @param modelo        modelo del vehículo
+     * @param extras        equipamiento adicional
+     * @param precio        precio del coche
+     * @param idPropietario ID del propietario o {@code null} si pertenece al concesionario
+     */
     public Coche(String matricula, String marca, String modelo, String extras, double precio, Integer idPropietario) {
         this.matricula = matricula;
         this.marca = marca;
@@ -75,7 +94,7 @@ public class Coche {
 
     @Override
     public String toString() {
-        return String.format("%s | %s %s | Precio: %.2f€ | Extras: %s",
-                matricula, marca, modelo, precio, (extras != null && !extras.isEmpty() ? extras : "Ninguno"));
+        String textoExtras = (extras != null && !extras.isEmpty()) ? extras : "Ninguno";
+        return matricula + " | " + marca + " " + modelo + " | Precio: " + precio + "€ | Extras: " + textoExtras;
     }
 }

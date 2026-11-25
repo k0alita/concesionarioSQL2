@@ -11,6 +11,14 @@ public class Traspaso {
     private int idComprador;
     private double montoEconomico;
 
+    /**
+     * Crea un traspaso sin ID asignado.
+     *
+     * @param matriculaCoche matrícula del coche traspasado
+     * @param idVendedor     ID del vendedor
+     * @param idComprador    ID del comprador
+     * @param montoEconomico importe económico de la operación
+     */
     public Traspaso(String matriculaCoche, Integer idVendedor, int idComprador, double montoEconomico) {
         this.matriculaCoche = matriculaCoche;
         this.idVendedor = idVendedor;
@@ -18,6 +26,15 @@ public class Traspaso {
         this.montoEconomico = montoEconomico;
     }
 
+    /**
+     * Crea un traspaso con todos sus datos incluido su identificador.
+     *
+     * @param idTraspaso     identificador único en base de datos
+     * @param matriculaCoche matrícula del coche traspasado
+     * @param idVendedor     ID del vendedor
+     * @param idComprador    ID del comprador
+     * @param montoEconomico importe económico de la operación
+     */
     public Traspaso(int idTraspaso, String matriculaCoche, Integer idVendedor, int idComprador, double montoEconomico) {
         this(matriculaCoche, idVendedor, idComprador, montoEconomico);
         this.idTraspaso = idTraspaso;
@@ -66,7 +83,8 @@ public class Traspaso {
     @Override
     public String toString() {
         String vendedor = (idVendedor != null) ? String.valueOf(idVendedor) : "Concesionario";
-        return String.format("Traspaso #%d | Coche: %s | Vendedor: %s -> Comprador: %d | Importe: %.2f€",
-                idTraspaso, matriculaCoche, vendedor, idComprador, montoEconomico);
+        return "Traspaso #" + idTraspaso + " | Coche: " + matriculaCoche
+                + " | Vendedor: " + vendedor + " -> Comprador: " + idComprador
+                + " | Importe: " + montoEconomico + "€";
     }
 }
